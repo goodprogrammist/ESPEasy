@@ -193,11 +193,22 @@ ESPEASY_RULES_FLOAT_TYPE RulesCalculate_t::apply_operator(char op, ESPEASY_RULES
     case '/':
       return first / second;
     case '%':
+    {
     #if FEATURE_USE_DOUBLE_AS_ESPEASY_RULES_FLOAT_TYPE
-      return static_cast<int>(round(first)) % static_cast<int>(round(second));
+      const int divisor = static_cast<int>(round(second));
     #else
-      return static_cast<int>(roundf(first)) % static_cast<int>(roundf(second));
+      const int divisor = static_cast<int>(roundf(second));
     #endif // if FEATURE_USE_DOUBLE_AS_ESPEASY_RULES_FLOAT_TYPE
+
+      // Integer division by zero raises an IntegerDivideByZero exception on ESP32 (crash)
+      // Return NaN, like fmod(x:0) does
+      if (divisor == 0) { return NAN; }
+    #if FEATURE_USE_DOUBLE_AS_ESPEASY_RULES_FLOAT_TYPE
+      return static_cast<int>(round(first)) % divisor;
+    #else
+      return static_cast<int>(roundf(first)) % divisor;
+    #endif // if FEATURE_USE_DOUBLE_AS_ESPEASY_RULES_FLOAT_TYPE
+    }
     case '^':
     #if FEATURE_USE_DOUBLE_AS_ESPEASY_RULES_FLOAT_TYPE
       return pow(first, second);
